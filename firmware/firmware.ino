@@ -21,14 +21,36 @@ int checkInterrupt() {
 }
 
 void loop() {
-  Serial.println("SELECT FUNCTION: DATASEND or PING >> ");
+  Serial.println("FUNC >> ");
   while (Serial.available() == 0) {}
   String reply = Serial.readString();
   reply.trim();
-  if (reply == "DATASEND") {
+  if (reply == "MSG") {
+    sendData("BEGIN MSG");
+    int interrupt = 0;
+    while (!interrupt) {
+      Serial.println("MESSAGE (Q to quit) >> ");
+      while(Serial.available() == 0) {}
+      String msg = Serial.readString();
+      msg.trim();
+      if (msg.equalsIgnoreCase("Q") || msg.equalsIgnoreCase("QUIT")) {
+        sendData("END MODE");
+        interrupt = 1;
+      } else {
+        sendData(msg);
+        Serial.print(msg);
+        Serial.println(" [SENT]");
+      }
+    }
+  } else if (reply == "PING") {
+    sendData("PING");
+    timeSave = clock();
+  } else if (reply == "TMP") {
+    sendData("BEGIN TMP");
     int interrupt = 0;
     while (!interrupt) {
       if (checkInterrupt()) {
+        sendData("END MODE");
         interrupt = 1;
       } else {
         float temp = readTemperature();
@@ -38,9 +60,6 @@ void loop() {
         delay(200);
       }
     }
-  } else if (reply == "PING") {
-    sendData("PING");
-    timeSave = clock();
   }
 }
 
@@ -49,7 +68,7 @@ void onDataReceived(String data) {
     clock_t currentTime = clock();
     float pingTime = (float)currentTime - (float)timeSave;
     char timePrint[32];
-    sprintf(timePrint, "PING TIME: %.2f", pingTime);
+    sprintf(timePrint, "PING TIME: %.2f (FUNC) >>", pingTime);
     Serial.println(timePrint);
   }
 }
